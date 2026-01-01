@@ -8,17 +8,22 @@ defaults:
   - override /model: mnist
   - override /callbacks: default
   - override /trainer: default
+  - override /logger: wandb
+  - override /hydra: default
+  - override /builder: dynamic
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
 tags: ["mnist", "simple_dense_net"]
-
+optimized_metric: val/acc_best
 seed: 12345
 
 trainer:
-  min_epochs: 10
-  max_epochs: 10
+  min_epochs: 1
+  max_epochs: 1
+  limit_train_batches: 3
+  limit_val_batches: 3
   gradient_clip_val: 0.5
 
 model:
@@ -35,7 +40,16 @@ data:
 
 logger:
   wandb:
-    tags: ${tags}
-    group: "mnist"
+    save_dir: "${paths.root_dir}"
+    save_code: true
+    # offline: true
   aim:
     experiment: "mnist"
+# configs/hydra/workflow_logging.yaml
+
+hydra:
+  run:
+    dir: ${paths.log_dir}/${task_name}/runs/${now:%Y-%m-%d}_${now:%H-%M-%S-%f}
+  sweep:
+    dir: ${paths.log_dir}/${task_name}/multiruns/${now:%Y-%m-%d}_${now:%H-%M-%S-%f}
+    subdir: ${hydra.job.num}

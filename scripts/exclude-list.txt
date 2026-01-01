@@ -1,0 +1,5 @@
+__pycache__/
+*.cpython-*.pyc
+*.log
+wandb/
+logs/

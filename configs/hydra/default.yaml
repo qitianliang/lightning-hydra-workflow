@@ -17,3 +17,15 @@ job_logging:
     file:
       # Incorporates fix from https://github.com/facebookresearch/hydra/pull/2242
       filename: ${hydra.runtime.output_dir}/${task_name}.log
+
+  formatters:
+    simple:
+      # Use the custom formatter class we created
+      "()": src.utils.pylogger.RelativePathFormatter
+      # Use the new 'relativePath' attribute in the format string
+      format: "[%(asctime)s][%(relativePath)s:%(lineno)d][%(levelname)s] - %(message)s"
+    colorlog:
+      # Use the custom formatter class we created
+      "()": src.utils.pylogger.RelativePathFormatter
+      # Use the new 'relativePath' attribute in the format string
+      format: "[%(cyan)s%(asctime)s%(reset)s][%(blue)s%(relativePath)s%(reset)s][%(log_color)s%(levelname)s%(reset)s] - %(message)s"

@@ -1,0 +1,68 @@
+# 任務切換器: 'sweep','evaluate', 'all'
+task_name: all
+
+# W&B 項目信息
+wandb:
+  entity: "qitianliang"
+  project: "mnist-workflow-demo"
+  name: "mnist-sweep"
+
+# 通用設置
+
+general:
+  status_dir: "logs/sweeps"
+
+  # 【關鍵修正】: 使用 '.' 來進行相對路徑插值
+  # 這告訴 OmegaConf 在當前的 'general' 節點下查找 'status_dir'
+  latest_status_file: "${.status_dir}/${..wandb.entity}-${..wandb.project}-${..wandb.name}-latest.yaml"
+
+  tmux_session_name: "mnist_workflow"
+  # configs/workflow/general.yaml
+notification:
+  enabled: true
+  smtp:
+    host: ${oc.env:SMTP_HOST}
+    port: 465 # 使用 SSL 的端口 (或 587 使用 TLS)
+    use_ssl: true
+    username: ${oc.env:SMTP_EMAIL_ADDRESS}
+    password: ${oc.env:SMTP_PASSWORD}
+  recipient_email: ${oc.env:USER_EMAIL_ADDRESS}
+
+# Sweep 任務配置
+sweep_task:
+  conda_env: "cu129"
+  config_path: "configs/sweep/mnist_sweep.yaml"
+  devices: [0, 1]
+  agent_max_initial_failures: 5
+
+# 評估任務配置
+evaluate_task:
+  target_sweep_id:
+  # 【新增】: 評估任務的執行模式
+  # 'rerun':   刪除已存在的評估 run，並強制重新運行所有種子。
+  # 'resume':  如果已存在評估 run，則跳過運行，直接進入結果聚合。
+  mode: "rerun"
+  # 1. 分析階段配置
+  optimized_metric: "val/acc_best"
+  # 【新增】: 是否等待 sweep 結束
+  wait_for_sweep_finish: true
+  # 【新增】: 檢查 sweep 狀態的輪詢間隔（秒）
+  wait_interval_seconds: 15
+
+  # 2. 評估階段配置
+  num_seeds: 5
+  seed_start: 42
+
+  run_command:
+    base_args:
+      - "python"
+      - "src/train.py"
+      - "experiment=example"
+      - "trainer=gpu"
+      - "logger.wandb.project=${workflow.wandb.project}"
+
+  # 3. 報告階段配置
+  test_metrics:
+    - "test/acc"
+    - "test/loss"
+  report_path: "logs/final_reports/optimized_results_{sweep_id}.json"

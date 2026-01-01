@@ -1,7 +1,22 @@
 import logging
+import os
 from typing import Mapping, Optional
 
+import rootutils
+from colorlog import ColoredFormatter
 from lightning_utilities.core.rank_zero import rank_prefixed_message, rank_zero_only
+
+
+class RelativePathFormatter(ColoredFormatter):
+    """A custom formatter to show relative file paths in logs."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        """Calculates the relative path of the file and adds it to the log record."""
+        # Heuristic to find the project root (assuming this file is in 'src/utils/')
+        project_root = rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
+        relative_path = os.path.relpath(record.pathname, project_root)
+        record.relativePath = f"{relative_path}:{record.lineno}"
+        return super().format(record)
 
 
 class RankedLogger(logging.LoggerAdapter):
@@ -43,9 +58,20 @@ class RankedLogger(logging.LoggerAdapter):
             msg = rank_prefixed_message(msg, current_rank)
             if self.rank_zero_only:
                 if current_rank == 0:
-                    self.logger.log(level, msg, *args, **kwargs)
+                    # When `stacklevel=2` is used, the logging framework looks two frames up the call stack
+                    # to find the caller's information (file name, line number).
+                    #
+                    # Call stack:
+                    # 1. Your code: `log.info("Hello")` in `src/utils/utils.py`
+                    # 2. This method: `RankedLogger.log(...)` in `src/utils/pylogger.py`
+                    # 3. The actual logging call: `self.logger.log(...)`
+                    #
+                    # - `stacklevel=1` (default): Would report from frame 3, showing `pylogger.py` and the line below.
+                    # - `stacklevel=2`: Reports from frame 2's caller (frame 1), correctly showing `src/utils/utils.py`
+                    #   and the line where `log.info` was called.
+                    self.logger.log(level, msg, *args, stacklevel=2, **kwargs)
             else:
                 if rank is None:
-                    self.logger.log(level, msg, *args, **kwargs)
+                    self.logger.log(level, msg, *args, stacklevel=2, **kwargs)
                 elif current_rank == rank:
-                    self.logger.log(level, msg, *args, **kwargs)
+                    self.logger.log(level, msg, *args, stacklevel=2, **kwargs)

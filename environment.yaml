@@ -8,7 +8,7 @@
 name: myenv
 
 channels:
-  - pytorch
+  # - pytorch
   - conda-forge
   - defaults
 
@@ -22,17 +22,13 @@ channels:
 
 dependencies:
   - python=3.10
-  - pytorch=2.*
-  - torchvision=0.*
-  - lightning=2.*
-  - torchmetrics=0.*
   - hydra-core=1.*
   - rich=13.*
   - pre-commit=3.*
   - pytest=7.*
 
   # --------- loggers --------- #
-  # - wandb
+  # - wandb==0.22.0
   # - neptune-client
   # - mlflow
   # - comet-ml
@@ -40,6 +36,12 @@ dependencies:
 
   - pip>=23
   - pip:
+      - --index-url=https://mirrors.xjtu.edu.cn/pypi/simple
+
+      # - pydantic==2.10.0
       - hydra-optuna-sweeper
       - hydra-colorlog
       - rootutils
+      - pytest-mock
+      - pandas
+      - setproctitle
