@@ -102,10 +102,12 @@ def send_email_with_dataframe(cfg: DictConfig, subject: str, body: str, metric_d
     msg["To"] = cfg.recipient_email
     msg.attach(MIMEText(styled_html, "html"))
     try:
+        timeout_seconds = 10
         log.info(f"Connecting to SMTP server {cfg.smtp.host}:{cfg.smtp.port} to send email...")
         if cfg.smtp.use_ssl:
             context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(cfg.smtp.host, cfg.smtp.port, context=context) as server:
+            with smtplib.SMTP_SSL(cfg.smtp.host, cfg.smtp.port, context=context, timeout=timeout_seconds) as server:
+                server.set_debuglevel(1)
                 server.login(cfg.smtp.username, cfg.smtp.password)
                 server.send_message(msg)
         else:  # For TLS on port 587

@@ -1,6 +1,6 @@
 # 任務切換器: 'sweep','evaluate', 'all'
-task_name: all
-
+task_name: pipeline
+target_sweep_id: null
 # W&B 項目信息
 wandb:
   entity: "qitianliang"
@@ -19,7 +19,7 @@ general:
   tmux_session_name: "mnist_workflow"
   # configs/workflow/general.yaml
 notification:
-  enabled: true
+  enabled: false
   smtp:
     host: ${oc.env:SMTP_HOST}
     port: 465 # 使用 SSL 的端口 (或 587 使用 TLS)
@@ -50,7 +50,7 @@ evaluate_task:
   wait_interval_seconds: 15
 
   # 2. 評估階段配置
-  num_seeds: 5
+  num_seeds: 2
   seed_start: 42
 
   run_command:
@@ -66,3 +66,61 @@ evaluate_task:
     - "test/acc"
     - "test/loss"
   report_path: "logs/final_reports/optimized_results_{sweep_id}.json"
+
+override_task:
+  target_sweep_id: 0294pwn2
+  name: "override_batch_size_256"             # 消融实验别名
+  overrides:                # 需要强制覆盖的消融变量
+    data.batch_size: 256
+  mode: "rerun"
+    # 1. 分析階段配置
+  optimized_metric: "val/acc_best"
+  # 【新增】: 是否等待 sweep 結束
+  wait_for_sweep_finish: true
+  # 【新增】: 檢查 sweep 狀態的輪詢間隔（秒）
+  wait_interval_seconds: 15
+
+  # 2. 評估階段配置
+  num_seeds: 2
+  seed_start: 42
+
+  run_command:
+    base_args:
+      - "python"
+      - "src/train.py"
+      - "experiment=example"
+      - "trainer=gpu"
+      - "logger.wandb.project=${workflow.wandb.project}"
+
+  # 3. 報告階段配置
+  test_metrics:
+    - "test/acc"
+    - "test/loss"
+  report_path: "logs/final_reports/{group_name}.json"
+
+
+# configs/workflow/mnist.yaml
+
+pipeline_tasks:
+  # 1. 全量模型评估
+  - name: "Full_Model"
+    type: "evaluate"
+
+  # 2. 单一消融实验 (使用字典格式)
+  # - name: "ablation_no_dropout"
+  #   type: "override"
+  #   overrides:
+  #     model.net.lin2_size: 256
+
+  # # 3. 单参数敏感性分析 (使用 grid 类型，自动展开列表)
+  # - name: "dim_search"
+  #   type: "grid"
+  #   params:
+  #     model.net.lin2_size: [64, 128, 256, 512]
+
+  # # 4. 双参数/多参数组合敏感性分析 (自动进行笛卡尔积组合，4x4=16个实验)
+  # - name: "dim_search"
+  #   type: "grid"
+  #   params:
+  #     model.net.lin2_size: [64, 128, 256, 512]
+  #     model.net.lin1_size: [64, 128, 256, 512]
