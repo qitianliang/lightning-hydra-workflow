@@ -16,11 +16,17 @@ wandb login
 
 # evaluate Default sweep logs: `logs/sweeps/status_{sweep_id}.yaml`, also can be found on wandb UI sweeps
 # mode = resume, sweep_id = `0294pwn2` as example
-python src/sweep.py workflow.task_name=override \
-    workflow.override_task.mode=rerun  \
-    workflow.override_task.target_sweep_id=0294pwn2 \
-    +workflow.override_task.overrides.data.batch_size=32 \
-    workflow.sweep_task.conda_env="${pyenv}" \
-    workflow.sweep_task.devices="${devices}"
+# python src/sweep.py workflow.task_name=override \
+#     workflow.override_task.mode=rerun  \
+#     workflow.override_task.target_sweep_id=0294pwn2 \
+#     +workflow.override_task.overrides.data.batch_size=32 \
+#     workflow.sweep_task.conda_env="${pyenv}" \
+#     workflow.sweep_task.devices="${devices}"
 # mode = rerun
 # python src/sweep.py workflow.task_name=evaluate workflow.evaluate_task.target_sweep_id=sweep_id workflow.evaluate_task.mode=rerun workflow.sweep_task.conda_env="${pyenv}" workflow.sweep_task.devices="${devices}"
+
+# pipeline version
+
+python src/sweep.py workflow=mnist # default pipeline includes sweep, multi-seeds metrics evaluation, ablations, and hyperparameter sensitivity.
+python src/sweep.py workflow=mnist workflow.target_sweep_id=2lcprfv0 # resume pipeline after sweep
+python src/sweep.py workflow=mnist workflow.notification.enabled=true # enable notification

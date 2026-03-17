@@ -17,8 +17,10 @@
   - `all` : sweep+evaluate （常用）单次运行超参实验
   - `sweep` : 仅超参
   - `evaluate` :（复跑）例如修改test 阶段输出指标
+  - `pipeline` : 完整流水线支持（默认）参数寻优，多随机种子指标均值标准差，消融，参数敏感性。
 
   其中`evaluate`模式下 支持`mode=resume/rerun`
+
 
 - Email 通知
 
